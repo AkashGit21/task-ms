@@ -9,6 +9,6 @@ GOINSTALL=$(GOCMD) install
 BINARY_NAME=task-management-system
 
 run-task:
-	go run ./cmd/task-service/main.go
+	go run ./cmd/task-ms task
 
 .PHONY: run-task
