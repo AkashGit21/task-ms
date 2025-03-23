@@ -38,11 +38,11 @@ func (x TaskStatus) String() string {
 }
 
 type Task struct {
-	ID                  int64      `db:"id"`
+	ID                  string     `db:"id"`
 	Title               string     `db:"title" json:"title"`
 	Content             string     `db:"content" json:"content"`
-	HTMLStylizedContent string     `db:"stylizedContent" json:"stylizedContent"`
-	Status              TaskStatus `db:"status" json:"-"`
+	HTMLStylizedContent string     `db:"stylized_content" json:"stylized_content"`
+	Status              TaskStatus `db:"status" json:"status"`
 	Discarded           bool       `db:"discarded" json:"-"`
 
 	CreatedAt  time.Time `db:"created_at" json:"created_at"`

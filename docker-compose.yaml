@@ -11,7 +11,7 @@ services:
       - ./mysql-init:/docker-entrypoint-initdb.d
       - ./mysql-certs:/etc/mysql/certs
     healthcheck:
-      test: "mysql --user=auth_user --password=auth_password --execute \"SHOW DATABASES;\" || exit 1"
+      test: "mysql --user=task_user --password=task_password --execute \"SHOW DATABASES;\" || exit 1"
       interval: 10s
       timeout: 10s
       retries: 5

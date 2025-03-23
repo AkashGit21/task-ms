@@ -3,8 +3,10 @@ package mysql
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/AkashGit21/task-ms/lib/persistence"
 	"github.com/AkashGit21/task-ms/utils"
@@ -17,12 +19,12 @@ type TaskPersistenceLayer struct {
 }
 
 type TaskOps interface {
-	Exists(id int64) (bool, error)
+	Exists(id string) (bool, error)
 	SaveRecord(record persistence.Task) (int64, error)
-	UpdateRecord(id int64, record persistence.Task) error
+	UpdateRecord(id string, record persistence.Task) error
 	FetchRecords() ([]persistence.Task, error)
-	GetRecord(id int64) (*persistence.Task, error)
-	DeactivateRecord(id int64) error
+	GetRecord(id string) (*persistence.Task, error)
+	DeactivateRecord(id string) error
 }
 
 func NewTaskPersistenceLayer() (TaskOps, error) {
@@ -54,17 +56,35 @@ func NewTaskPersistenceLayer() (TaskOps, error) {
 }
 
 /** TODO: Implement functionality to check if record exists in DB **/
-func (tpl *TaskPersistenceLayer) Exists(id int64) (bool, error) {
+func (tpl *TaskPersistenceLayer) Exists(id string) (bool, error) {
 	return false, nil
 }
 
-/** TODO: Inserts a new TASK record **/
+/** Inserts a new TASK record **/
 func (tpl *TaskPersistenceLayer) SaveRecord(record persistence.Task) (int64, error) {
-	return -1, nil
+	_, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	stmt, err := tpl.db.Prepare("INSERT INTO tasks (id, title, content, stylized_content, status, created_at, modified_at, created_by, modified_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+
+	if err != nil {
+		return int64(-1), err
+	}
+	defer stmt.Close()
+
+	tpl.Lock()
+	defer tpl.Unlock()
+	// Execute the SQL statement to insert the new row
+	res, err := stmt.Exec(record.ID, record.Title, record.Content, record.HTMLStylizedContent, record.Status, record.CreatedAt, record.ModifiedAt, record.CreatedBy, record.ModifiedBy)
+	if err != nil {
+		return int64(-1), err
+	}
+
+	return res.RowsAffected()
 }
 
 /** TODO: Update an existing TASK record **/
-func (tpl *TaskPersistenceLayer) UpdateRecord(id int64, record persistence.Task) error {
+func (tpl *TaskPersistenceLayer) UpdateRecord(id string, record persistence.Task) error {
 	return nil
 }
 
@@ -73,12 +93,45 @@ func (tpl *TaskPersistenceLayer) FetchRecords() ([]persistence.Task, error) {
 	return nil, nil
 }
 
-/** TODO: Query to fetch the TASK with given ID **/
-func (pdb *TaskPersistenceLayer) GetRecord(id int64) (*persistence.Task, error) {
-	return nil, nil
+/** Query to fetch the TASK with given ID **/
+func (pdb *TaskPersistenceLayer) GetRecord(id string) (*persistence.Task, error) {
+	query := "SELECT id, title, content, stylized_content, status, created_at, modified_at, created_by, modified_by FROM tasks WHERE id = ? AND discarded = false"
+
+	// Execute the query with the primary key value
+	var task persistence.Task
+	err := pdb.db.QueryRow(query, id).Scan(
+		&task.ID, &task.Title, &task.Content, &task.HTMLStylizedContent,
+		&task.Status, &task.CreatedAt, &task.ModifiedAt, &task.CreatedBy, &task.ModifiedBy,
+	)
+
+	// Check for errors
+	if err == sql.ErrNoRows {
+		// No record found with the given identifier, not an error.
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	return &task, nil
 }
 
 /**: TODO: Soft delete TASK record with given ID**/
-func (tpl *TaskPersistenceLayer) DeactivateRecord(id int64) error {
-	return nil
+func (tpl *TaskPersistenceLayer) DeactivateRecord(id string) error {
+	query := "UPDATE tasks SET discarded = 1 WHERE id =?"
+	tpl.Lock()
+	defer tpl.Unlock()
+
+	res, err := tpl.db.Exec(query, id)
+	if err != nil {
+		return err
+	}
+
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return errors.New("no rows affected")
+	}
+	return err
 }
