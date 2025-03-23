@@ -21,13 +21,20 @@ Tasks Listing should include:
 
 
 ### Steps to run the backend server via Docker
+
+#### Start both task-service and auth-service:
 ```sh
 docker-compose up --build -d
 ```
 
+#### Stop the server(s) completely
+```sh
+docker-compose down
+```
+
 **NOTE**: Docker compose is running `mysql` internally on port 3306, and may require local Mysql instance to stop.
 ```sh
- sudo systemctl stop mysql
+sudo systemctl stop mysql
 ```
 
 
@@ -36,8 +43,9 @@ docker-compose up --build -d
     ```sh
     go mod tidy
     ```
-1. Add the required table(s) to your RDBMS system by using commands from `init.sql`. 
-**Note**: This is a one-time step only. Taking this step again will clear all the tasks data from server.
+1. Add the required table(s) to your RDBMS system by using commands from `init.sql`.
+    
+    **Note**: This is a one-time step only. Taking this step again will clear all previous tasks data from local setup.
 1. Create and update the .env file in the project directory by using `.env.example` file. Fill in all the necessary values to make connection with the pre-requisites defined above.
 1. Run the task service using terminal by typing: 
     ```sh
