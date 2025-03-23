@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/AkashGit21/task-ms/lib/persistence"
-	"github.com/AkashGit21/task-ms/utils"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
@@ -47,7 +46,6 @@ type listTasksResponse struct {
 
 /** Creates a new Task **/
 func (tvh *TaskHandler) createTask(w http.ResponseWriter, r *http.Request) {
-	utils.DebugLog("Inside createTask")
 	var req createTaskRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -59,7 +57,7 @@ func (tvh *TaskHandler) createTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	status, ok := persistence.TaskStatus_value[*req.Status]
+	status, ok := persistence.TaskStatus_value[strings.ToLower(*req.Status)]
 	if !ok {
 		// Set the deafult Task status as TODO
 		status = persistence.STATUS_TODO
@@ -244,7 +242,7 @@ func (tvh *TaskHandler) listTasks(w http.ResponseWriter, r *http.Request) {
 
 	var status *persistence.TaskStatus
 	if statusStr != "" {
-		statusVal, ok := persistence.TaskStatus_value[statusStr]
+		statusVal, ok := persistence.TaskStatus_value[strings.ToLower(statusStr)]
 		if !ok {
 			// Ignoring incorrect status - APIs should not break
 			return
@@ -313,7 +311,7 @@ func patchMutableFields(task *persistence.Task, req patchTaskRequest) (persisten
 	}
 
 	if req.Status != nil {
-		if status, ok := persistence.TaskStatus_value[*req.Status]; !ok {
+		if status, ok := persistence.TaskStatus_value[strings.ToLower(*req.Status)]; !ok {
 			return *task, errors.New("invalid status")
 		} else {
 			task.Status = persistence.TaskStatus(status)
