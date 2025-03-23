@@ -50,3 +50,14 @@ type Task struct {
 	ModifiedAt time.Time `db:"modified_at" json:"modified_at"`
 	ModifiedBy string    `db:"modified_by" json:"modified_by"`
 }
+
+type TaskFilterParams struct {
+	Status *TaskStatus `json:"status"`
+	Cursor *string     `json:"cursor"`
+	Limit  int         `json:"limit"`
+}
+
+type CursorData struct {
+	ModifiedAt time.Time `json:"modified_at"`
+	ID         string    `json:"id"`
+}

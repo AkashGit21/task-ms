@@ -3,6 +3,8 @@ package mysql
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -13,18 +15,19 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+const DEFAULT_MAX_PAGE_SIZE = 50
+
 type TaskPersistenceLayer struct {
 	db *sql.DB
 	sync.Mutex
 }
 
 type TaskOps interface {
-	Exists(id string) (bool, error)
-	SaveRecord(record persistence.Task) (int64, error)
-	UpdateRecord(id string, record persistence.Task) error
-	FetchRecords() ([]persistence.Task, error)
-	GetRecord(id string) (*persistence.Task, error)
-	DeactivateRecord(id string) error
+	SaveRecord(persistence.Task) (int64, error)
+	UpdateRecord(id string, record persistence.Task) (int64, error)
+	FetchRecords(persistence.TaskFilterParams) ([]persistence.Task, error)
+	GetRecord(string) (*persistence.Task, error)
+	DeactivateRecord(string) error
 }
 
 func NewTaskPersistenceLayer() (TaskOps, error) {
@@ -55,11 +58,6 @@ func NewTaskPersistenceLayer() (TaskOps, error) {
 	}, nil
 }
 
-/** TODO: Implement functionality to check if record exists in DB **/
-func (tpl *TaskPersistenceLayer) Exists(id string) (bool, error) {
-	return false, nil
-}
-
 /** Inserts a new TASK record **/
 func (tpl *TaskPersistenceLayer) SaveRecord(record persistence.Task) (int64, error) {
 	_, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -83,14 +81,79 @@ func (tpl *TaskPersistenceLayer) SaveRecord(record persistence.Task) (int64, err
 	return res.RowsAffected()
 }
 
-/** TODO: Update an existing TASK record **/
-func (tpl *TaskPersistenceLayer) UpdateRecord(id string, record persistence.Task) error {
-	return nil
+/** Update an existing TASK record **/
+func (tpl *TaskPersistenceLayer) UpdateRecord(id string, record persistence.Task) (int64, error) {
+	query := "UPDATE tasks SET title = ?, content = ?, stylized_content = ?, status = ?, modified_at = ?, modified_by = ? WHERE id = ? AND discarded = false"
+
+	tpl.Lock()
+	defer tpl.Unlock()
+
+	// Execute the query with the given ID
+	res, err := tpl.db.Exec(query, record.Title, record.Content, record.HTMLStylizedContent, record.Status, record.ModifiedAt, record.ModifiedBy, id)
+
+	// Check for errors
+	if err == sql.ErrNoRows {
+		// No record found with the given identifier, not an error.
+		return int64(-1), nil
+	} else if err != nil {
+		return int64(-1), err
+	}
+
+	return res.RowsAffected()
 }
 
-/** TODO: Returns all the active TASK records with pagination and filters in descending order of modifications **/
-func (tpl *TaskPersistenceLayer) FetchRecords() ([]persistence.Task, error) {
-	return nil, nil
+/** Returns all the active TASK records with cursor-based pagination and status filter in descending order of modifications **/
+func (tpl *TaskPersistenceLayer) FetchRecords(params persistence.TaskFilterParams) ([]persistence.Task, error) {
+	query := `SELECT id, title, content, stylized_content, status, created_at, created_by, modified_at, modified_by FROM tasks WHERE discarded = FALSE`
+	args := []interface{}{}
+	var cursorData persistence.CursorData
+
+	if params.Status != nil {
+		query += ` AND status = ?`
+		args = append(args, *params.Status)
+	}
+
+	if params.Cursor != nil && *params.Cursor != "" {
+		decodedCursor, err := base64.StdEncoding.DecodeString(*params.Cursor)
+		if err != nil {
+			return nil, fmt.Errorf("invalid cursor: %w", err)
+		}
+
+		if err := json.Unmarshal(decodedCursor, &cursorData); err != nil {
+			return nil, fmt.Errorf("invalid cursor data: %w", err)
+		}
+		query += ` AND (modified_at, id) < (?, ?)`
+		args = append(args, cursorData.ModifiedAt, cursorData.ID)
+	}
+
+	query += ` ORDER BY modified_at DESC, id DESC`
+
+	if params.Limit > 0 {
+		query += ` LIMIT ?`
+		args = append(args, params.Limit)
+	} else {
+		query += fmt.Sprintf(` LIMIT %d`, DEFAULT_MAX_PAGE_SIZE)
+	}
+
+	rows, err := tpl.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch tasks: %w", err)
+	}
+	defer rows.Close()
+
+	tasks := []persistence.Task{}
+	for rows.Next() {
+		var task persistence.Task
+		if err := rows.Scan(
+			&task.ID, &task.Title, &task.Content, &task.HTMLStylizedContent,
+			&task.Status, &task.CreatedAt, &task.CreatedBy, &task.ModifiedAt,
+			&task.ModifiedBy); err != nil {
+			return nil, fmt.Errorf("failed to scan task: %w", err)
+		}
+		tasks = append(tasks, task)
+	}
+
+	return tasks, nil
 }
 
 /** Query to fetch the TASK with given ID **/
@@ -115,7 +178,7 @@ func (pdb *TaskPersistenceLayer) GetRecord(id string) (*persistence.Task, error)
 	return &task, nil
 }
 
-/**: TODO: Soft delete TASK record with given ID**/
+/**: Soft delete TASK record with given ID**/
 func (tpl *TaskPersistenceLayer) DeactivateRecord(id string) error {
 	query := "UPDATE tasks SET discarded = 1 WHERE id =?"
 	tpl.Lock()
