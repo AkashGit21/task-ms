@@ -24,8 +24,17 @@ func NewTaskV1Server() (*http.Server, error) {
 	return newServer(taskV1API)
 }
 
+func NewAuthnServer() (*http.Server, error) {
+	authnAPI, err := taskV1.New()
+	if err != nil {
+		return nil, err
+	}
+
+	return newServer(authnAPI)
+}
+
 func StartServer(srv *http.Server) {
-	log.Println("Starting Server...")
+	utils.InfoLog("Starting Server...")
 
 	idleConnsClosed := make(chan struct{})
 	go func() {
@@ -62,6 +71,7 @@ func newServer(api *mux.Router) (*http.Server, error) {
 	srvPort := utils.GetEnvValue("APP_PORT", "8081")
 	srvAddress := fmt.Sprintf("%s:%v", srvHost, srvPort)
 	log.Println("Configuring Server at address", srvAddress)
+
 	srv := http.Server{
 		Addr:    srvAddress,
 		Handler: api,

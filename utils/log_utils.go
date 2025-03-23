@@ -43,13 +43,14 @@ func printLog(logLevel string, args ...interface{}) {
 	if !ok || IsEmptyString(appLogLevel) {
 		appLogLevel = "WARN"
 	}
+	
 	if appLvl, ok := logLevelMap[appLogLevel]; ok && appLvl > logLevelMap[logLevel] {
 		return
 	}
 	currentTime := time.Now()
 
 	os.Mkdir("storage/logs", 0755)
-	path := "storage/logs/dropbox-"
+	path := "storage/logs/task-"
 	fileName := path + currentTime.Format("2006-01-02") + ".log"
 
 	logFile, err := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)

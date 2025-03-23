@@ -1,4 +1,4 @@
-package task
+package authn
 
 import (
 	"github.com/AkashGit21/task-ms/internal/task"
@@ -8,7 +8,7 @@ import (
 func New() (*mux.Router, error) {
 	router := mux.NewRouter()
 
-	taskRouter := router.PathPrefix("/api/v1").Subrouter()
+	taskRouter := router.PathPrefix("/api").Subrouter()
 	task.TaskV1Handler(taskRouter)
 
 	return router, nil
