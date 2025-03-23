@@ -9,7 +9,7 @@ type TaskHandler struct {
 	mysql.TaskOps
 }
 
-func NewTaskAPIHandler() *TaskHandler {
+func newTaskAPIHandler() *TaskHandler {
 	persistenceDB, err := mysql.NewTaskPersistenceLayer()
 	if err != nil {
 		panic(err)
@@ -21,7 +21,7 @@ func NewTaskAPIHandler() *TaskHandler {
 }
 
 func TaskV1Handler(r *mux.Router) {
-	th := NewTaskAPIHandler()
+	th := newTaskAPIHandler()
 
 	r.HandleFunc("/tasks", th.createTask).Methods("POST")
 }

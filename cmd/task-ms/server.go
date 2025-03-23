@@ -9,10 +9,10 @@ import (
 	"os/signal"
 	"time"
 
+	authn "github.com/AkashGit21/task-ms/api/authn"
 	taskV1 "github.com/AkashGit21/task-ms/api/task/v1"
 	"github.com/AkashGit21/task-ms/utils"
 	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
 )
 
 func NewTaskV1Server() (*http.Server, error) {
@@ -25,7 +25,7 @@ func NewTaskV1Server() (*http.Server, error) {
 }
 
 func NewAuthnServer() (*http.Server, error) {
-	authnAPI, err := taskV1.New()
+	authnAPI, err := authn.New()
 	if err != nil {
 		return nil, err
 	}
@@ -62,11 +62,6 @@ func StartServer(srv *http.Server) {
 }
 
 func newServer(api *mux.Router) (*http.Server, error) {
-	// Load environment variables from the .env file
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
-
 	srvHost := utils.GetEnvValue("APP_HOST", "localhost")
 	srvPort := utils.GetEnvValue("APP_PORT", "8081")
 	srvAddress := fmt.Sprintf("%s:%v", srvHost, srvPort)

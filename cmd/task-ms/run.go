@@ -31,8 +31,7 @@ func init() {
 		Use:   "authn",
 		Short: "Starts running the application server for task-service",
 		Run: func(cmd *cobra.Command, args []string) {
-			// TODO: Run asuthentication service here
-			authnSrv, err := NewTaskV1Server()
+			authnSrv, err := NewAuthnServer()
 			if err != nil {
 				utils.ErrorLog("Error getting new server:", err)
 				return

@@ -43,13 +43,17 @@ func printLog(logLevel string, args ...interface{}) {
 	if !ok || IsEmptyString(appLogLevel) {
 		appLogLevel = "WARN"
 	}
-	
+
 	if appLvl, ok := logLevelMap[appLogLevel]; ok && appLvl > logLevelMap[logLevel] {
 		return
 	}
 	currentTime := time.Now()
 
-	os.Mkdir("storage/logs", 0755)
+	err := os.MkdirAll("storage/logs", 0755)
+	if err != nil {
+		panic("Logs storage could not be created, error " + err.Error())
+	}
+
 	path := "storage/logs/task-"
 	fileName := path + currentTime.Format("2006-01-02") + ".log"
 

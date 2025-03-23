@@ -9,7 +9,7 @@ type authnHandler struct {
 	mysql.AuthnOps
 }
 
-func NewAuthnAPIHandler() *authnHandler {
+func newAuthnAPIHandler() *authnHandler {
 	persistenceDB, err := mysql.NewUserPersistenceLayer()
 	if err != nil {
 		panic(err)
@@ -21,7 +21,7 @@ func NewAuthnAPIHandler() *authnHandler {
 }
 
 func AuthnHandler(r *mux.Router) {
-	anh := NewAuthnAPIHandler()
+	anh := newAuthnAPIHandler()
 
-	r.HandleFunc("/tasks", anh.IsAuthenticated).Methods("POST")
+	r.HandleFunc("/login", anh.IsAuthenticated).Methods("POST")
 }

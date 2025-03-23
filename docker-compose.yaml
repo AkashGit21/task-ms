@@ -1,0 +1,46 @@
+version: "3.8"
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      - "3306:3306"
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - ./mysql-init:/docker-entrypoint-initdb.d
+      - ./mysql-certs:/etc/mysql/certs
+    healthcheck:
+      test: "mysql --user=auth_user --password=auth_password --execute \"SHOW DATABASES;\" || exit 1"
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    restart: always
+
+  auth-service:
+    build: .
+    ports:
+      - "8084:8084"
+    environment:
+      AUTH_DB_HOST: mysql
+      AUTH_DB_PORT: 3306
+      AUTH_DB_USER: auth_user
+      AUTH_DB_PASSWORD: auth_password
+      AUTH_DB_NAME: auth_db
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  task-service:
+    build: .
+    ports:
+      - "8083:8083"
+    environment:
+      TASK_DB_HOST: mysql
+      TASK_DB_PORT: 3306
+      TASK_DB_USER: task_user
+      TASK_DB_PASSWORD: task_password
+      TASK_DB_NAME: task_db
+    depends_on:
+      - auth-service

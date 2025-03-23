@@ -3,6 +3,8 @@ package utils
 import (
 	"os"
 	"strings"
+
+	"github.com/joho/godotenv"
 )
 
 func IsEmptyString(str string) bool {
@@ -10,6 +12,9 @@ func IsEmptyString(str string) bool {
 }
 
 func GetEnvValue(key, defaultValue string) string {
+	// Load environment variables from the .env file
+	godotenv.Load()
+
 	value, ok := os.LookupEnv(key)
 	if !ok || IsEmptyString(value) {
 		return defaultValue
