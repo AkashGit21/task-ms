@@ -1,12 +1,14 @@
 # task-ms
 A simple Task Management System using Go. The system allow users to create, read, update, and delete tasks. The system should be designed as a microservice with clear separation of concerns and should demonstrate your understanding of microservices architecture. 
 
-Tasks Listing should include:
+**Task Management System Microservice (Go)**
+Create, read, update, and delete tasks with a microservices architecture.
 
-- **Pagination**: Implement pagination for the GET /tasks endpoint.
-- **Filtering**: Allow filtering tasks by status (e.g., GET /tasks?status=Completed).
----
-### Problem breakdown and design decisions.
+**Key Features**
+- *Pagination*: Efficient task listing via cursor-based pagination.
+- *Filtering*: Filter tasks by status.
+- *Authentication*: User login and JWT token generation.
+- *Microservice Design*: Clear separation of concerns b/w task and auth
 
 
 ---
@@ -21,40 +23,17 @@ Tasks Listing should include:
 
 
 ### Steps to run the backend server via Docker
-
-#### Start both task-service and auth-service:
-```sh
-docker-compose up --build -d
-```
-
-#### Stop the server(s) completely
-```sh
-docker-compose down
-```
-
-**NOTE**: Docker compose is running `mysql` internally on port 3306, and may require local Mysql instance to stop.
-```sh
-sudo systemctl stop mysql
-```
+- **Start**: `docker-compose up --build -d`
+- **Stop**: `docker-compose down`
+    *Note*: May require stopping local MySQL (`sudo systemctl stop mysql`)
 
 
 ### Steps to run the backend server without Docker
-1. Navigate to the project directory in terminal and fetch all the dependencies using following command:
-    ```sh
-    go mod tidy
-    ```
-1. Add the required table(s) to your RDBMS system by using commands from `init.sql`.
-    
-    **Note**: This is a one-time step only. Taking this step again will clear all previous tasks data from local setup.
-1. Create and update the .env file in the project directory by using `.env.example` file. Fill in all the necessary values to make connection with the pre-requisites defined above.
-1. Run the task service using terminal by typing: 
-    ```sh
-    $ make run-task
-    ```
-1. Open a new terminal in parallel. Navigate to the project directory in new terminal as well. Run the user service:
-    ```sh
-    $ make run-authn
-    ```
+1. Install Dependencies: `go mod tidy`
+1. Perform DB Migration: Run `init.sql` to create tables and populate users.
+1. Populate `.env`: Configure .env file using `.env.example`.
+1. Run Task Service: `make run-task`
+1. Run Auth Service: `make run-authn` (in a separate terminal)
 ---
 
 ### API Documentation
@@ -184,16 +163,40 @@ sudo systemctl stop mysql
     }
     ```
 
-- [ ] **POST** `/api/login` Verify username / password and generate token for the user
+- [X] **POST** `/api/login` Verify username / password and generate token for the user
+
+    **Sample Request Body**
+    ```json
+    {
+        "username": "test",
+        "password": "test_1234"
+    }
+    ```
+
+    **Sample Response Body**
+    ```json
+    {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5I6IkpXVCJ9.eyJ1c2VybmFtZSI6InBhdmFuIiwidXNlcklEIjoidXNlci1pZC1hYmMiLCJzdWIiOiJwYXZhbiIsImV4cCI6MTc0Mjg2MjE3MywiaWF0IjoxNzQyc1NzczfQ.MxeZRr6TSJJF6_WxNDFlZklIiumIO-BCxwbw7iumM",
+        "expires_at": "2025-03-25T05:22:53.553268985Z"
+    }
+    ```
+    **Note**: `/login` endpoint is deployed as separate unit and runs on different port
 
 ---
-
-Explanation of how the service demonstrates microservices concepts.
-
+### Microservices Concepts Applied
+- **Clear Service Separation**
+    Task management and authentication are distinct services, promoting modularity and single responsibility.
+- **Independent Deployability**
+    Services can be deployed and scaled independently, enabling agile updates and optimized resource allocation.
+- R**ESTful API Communication**
+    Services communicate via well-defined RESTful APIs, fostering loose coupling and technology diversity.
+- **Fault Isolation**
+    Failures in one service do not impact others, enhancing system resilience.
 ---
 ### Additional Points considered for Application Server
 1. **Graceful shutdown**: This avoids any side effects on conflicts that may occur on closing the server and the new deployment can be started without any kind of difficulty.
-1. **Logging**: For debugging and monitoring the application on remote servers, it is recommended to log the application functionality.
+1. **Docker Setup**: Simplified setup and ensuring consistent application behavior across different environments. This promotes portability and ease of deployment.
+1. **Robust Logging**: Includes comprehensive logging to aid in debugging and monitoring.
 1. **Panic Handler**: Prevents the application from crashing, in case of any runtime errors or application malfunctioning.
 
 ### Improvements that can be done
