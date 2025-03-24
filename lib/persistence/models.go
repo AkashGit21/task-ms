@@ -61,3 +61,11 @@ type CursorData struct {
 	ModifiedAt time.Time `json:"modified_at"`
 	ID         string    `json:"id"`
 }
+
+type User struct {
+	ID                string    `db:"id"`
+	Username          string    `db:"username" json:"username"`
+	EncryptedPassword string    `db:"enc_password" json:"password"`
+	Discarded         bool      `db:"discarded" json:"-"`
+	CreatedAt         time.Time `db:"created_at" json:"created_at"`
+}

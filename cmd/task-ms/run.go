@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/AkashGit21/task-ms/utils"
+	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 )
 
@@ -17,6 +18,9 @@ func init() {
 		Use:   "task",
 		Short: "Starts running the application server for task-service",
 		Run: func(cmd *cobra.Command, args []string) {
+			// Load environment variables from the .env file
+			godotenv.Load()
+
 			taskSrv, err := NewTaskV1Server()
 			if err != nil {
 				utils.ErrorLog("Error getting new server:", err)
@@ -31,6 +35,9 @@ func init() {
 		Use:   "authn",
 		Short: "Starts running the application server for task-service",
 		Run: func(cmd *cobra.Command, args []string) {
+			// Load environment variables from the .env file
+			godotenv.Load()
+
 			authnSrv, err := NewAuthnServer()
 			if err != nil {
 				utils.ErrorLog("Error getting new server:", err)

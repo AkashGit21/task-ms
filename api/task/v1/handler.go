@@ -12,6 +12,7 @@ func New() (*mux.Router, error) {
 	taskRouter := router.PathPrefix("/api/v1").Subrouter()
 	taskRouter.Use(middlewares.TransactionalLogMiddleware)
 	taskRouter.Use(middlewares.PanicRecoveryMiddleware)
+	taskRouter.Use(middlewares.AuthMiddleware)
 	task.TaskV1Handler(taskRouter)
 
 	return router, nil
