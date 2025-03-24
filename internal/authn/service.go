@@ -57,7 +57,6 @@ func (anh *authnHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 
 	tokenString, err := token.SignedString(anh.JWTSecret)
 	if err != nil {
-		utils.ErrorLog("Failed to generate token", err)
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
 		return
 	}

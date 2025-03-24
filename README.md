@@ -37,6 +37,10 @@ Create, read, update, and delete tasks with a microservices architecture.
 ---
 
 ### API Documentation
+
+All Task APIs are only accessible to authenticated users. 
+Authentication method used is simply `Bearer token`
+
 - [X] **POST**    `/api/v1/tasks` Allows user to create a new Task
 
     **Sample Request Body**

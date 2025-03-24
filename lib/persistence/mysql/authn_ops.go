@@ -56,8 +56,6 @@ func (upl *UserPersistenceLayer) FetchActiveRecord(username string) (*persistenc
 	err := upl.db.QueryRow(query, username).Scan(
 		&user.ID, &user.Username, &user.EncryptedPassword, &user.CreatedAt,
 	)
-	utils.ErrorLog("FEtchActiveRecord error: ", err)
-	utils.InfoLog("user", user.ID, user.EncryptedPassword, user.CreatedAt)
 
 	// Check for errors
 	if err == sql.ErrNoRows {
