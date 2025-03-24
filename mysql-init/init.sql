@@ -31,3 +31,28 @@ CREATE TABLE tasks (
 -- Create indexes for filtering and user tasks
 CREATE INDEX idx_filtered_tasks ON tasks (discarded, status);
 CREATE INDEX idx_user_tasks ON tasks (created_by);
+
+
+-- Switch to the auth_db database
+USE auth_db;
+
+-- Drop the users table if it exists
+DROP TABLE IF EXISTS users;
+
+-- Create the tasks table
+CREATE TABLE users (
+    id VARCHAR(36) PRIMARY KEY,
+    username VARCHAR(255) UNIQUE NOT NULL,
+    enc_password VARCHAR(64) NOT NULL,
+    discarded BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for filtering and user tasks
+CREATE INDEX idx_users ON users (username);
+
+INSERT INTO users (id, username, enc_password)
+VALUES ('user-id-abc', 'pavan', '$2a$12$83h4Mjus72N0cudx9upBGed9EXnCrPdd4sK2PG7WhxU36HlqehuYm');
+INSERT INTO users (id, username, enc_password)
+VALUES ('user-id-xyz', 'harshit', '$2a$12$npRO3ZOgQygBNXPoPbEIgOhu1vFBUhvyV3nnEqRmx8QzQLuUZNx0q');
+

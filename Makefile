@@ -16,4 +16,4 @@ run-authn:
 	mkdir -p storage/
 	go run ./cmd/task-ms authn
 
-.PHONY: run-task
+.PHONY: run-task run-authn
