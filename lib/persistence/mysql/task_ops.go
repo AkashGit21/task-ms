@@ -24,10 +24,10 @@ type TaskPersistenceLayer struct {
 
 type TaskOps interface {
 	SaveRecord(persistence.Task) (int64, error)
-	UpdateRecord(id string, record persistence.Task) (int64, error)
+	UpdateRecord(string, string, persistence.Task) (int64, error)
 	FetchRecords(persistence.TaskFilterParams) ([]persistence.Task, error)
 	GetRecord(string) (*persistence.Task, error)
-	DeactivateRecord(string) error
+	DeactivateRecord(string, string) error
 }
 
 func NewTaskPersistenceLayer() (TaskOps, error) {
@@ -82,14 +82,15 @@ func (tpl *TaskPersistenceLayer) SaveRecord(record persistence.Task) (int64, err
 }
 
 /** Update an existing TASK record **/
-func (tpl *TaskPersistenceLayer) UpdateRecord(id string, record persistence.Task) (int64, error) {
+func (tpl *TaskPersistenceLayer) UpdateRecord(id, modifiedBy string, record persistence.Task) (int64, error) {
+	currentTime := time.Now().UTC()
 	query := "UPDATE tasks SET title = ?, content = ?, stylized_content = ?, status = ?, modified_at = ?, modified_by = ? WHERE id = ? AND discarded = false"
 
 	tpl.Lock()
 	defer tpl.Unlock()
 
 	// Execute the query with the given ID
-	res, err := tpl.db.Exec(query, record.Title, record.Content, record.HTMLStylizedContent, record.Status, record.ModifiedAt, record.ModifiedBy, id)
+	res, err := tpl.db.Exec(query, record.Title, record.Content, record.HTMLStylizedContent, record.Status, currentTime, modifiedBy, id)
 
 	// Check for errors
 	if err == sql.ErrNoRows {
@@ -178,13 +179,14 @@ func (pdb *TaskPersistenceLayer) GetRecord(id string) (*persistence.Task, error)
 	return &task, nil
 }
 
-/**: Soft delete TASK record with given ID**/
-func (tpl *TaskPersistenceLayer) DeactivateRecord(id string) error {
-	query := "UPDATE tasks SET discarded = 1 WHERE id =?"
+/** Soft delete TASK record with given ID**/
+func (tpl *TaskPersistenceLayer) DeactivateRecord(id string, modifiedBy string) error {
+	currentTime := time.Now().UTC()
+	query := "UPDATE tasks SET discarded = 1, modified_at = ?, modified_by = ? WHERE id =?"
 	tpl.Lock()
 	defer tpl.Unlock()
 
-	res, err := tpl.db.Exec(query, id)
+	res, err := tpl.db.Exec(query, currentTime, modifiedBy, id)
 	if err != nil {
 		return err
 	}

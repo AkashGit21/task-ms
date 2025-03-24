@@ -16,7 +16,7 @@ const (
 func TransactionalLogMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		utils.InfoLog(fmt.Sprintf(START_LOG, r.Method, r.URL.Path))
-		startTime := time.Now()
+		startTime := time.Now().UTC()
 
 		next.ServeHTTP(w, r)
 

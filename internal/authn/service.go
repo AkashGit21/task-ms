@@ -18,7 +18,8 @@ type loginRequest struct {
 }
 
 type loginResponse struct {
-	Token string `json:"token"`
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expires_at"`
 }
 
 /** Implement basic username / password authentication **/
@@ -43,18 +44,16 @@ func (anh *authnHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create JWT token
+	currentTime := time.Now().UTC()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, utils.UserClaims{
 		Username: user.Username,
 		UserID:   user.ID,
 		RegisteredClaims: jwt.RegisteredClaims{
-			IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
+			IssuedAt:  jwt.NewNumericDate(currentTime),
 			Subject:   user.Username,
-			ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(TOKEN_EXPIRY_DURATION)),
+			ExpiresAt: jwt.NewNumericDate(currentTime.Add(TOKEN_EXPIRY_DURATION)),
 		},
 	})
-
-	utils.InfoLog("login jwt secret", anh.JWTSecret)
 
 	tokenString, err := token.SignedString(anh.JWTSecret)
 	if err != nil {
@@ -63,7 +62,10 @@ func (anh *authnHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := loginResponse{Token: tokenString}
+	resp := loginResponse{
+		Token:     tokenString,
+		ExpiresAt: currentTime.Add(TOKEN_EXPIRY_DURATION),
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

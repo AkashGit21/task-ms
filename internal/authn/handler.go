@@ -17,8 +17,6 @@ func newAuthnAPIHandler() *authnHandler {
 		panic(err)
 	}
 
-	utils.ErrorLog("JWT secret ", utils.GetEnvValue("AUTH_JWT_SECRET", "DEFAULT SECRET"))
-
 	return &authnHandler{
 		persistenceDB,
 		[]byte(utils.GetEnvValue("AUTH_JWT_SECRET", "DEFAULT SECRET")),

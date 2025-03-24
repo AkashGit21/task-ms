@@ -47,7 +47,7 @@ func printLog(logLevel string, args ...interface{}) {
 	if appLvl, ok := logLevelMap[appLogLevel]; ok && appLvl > logLevelMap[logLevel] {
 		return
 	}
-	currentTime := time.Now()
+	currentTime := time.Now().UTC()
 
 	err := os.MkdirAll("storage/logs", 0755)
 	if err != nil {

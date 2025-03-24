@@ -15,7 +15,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			http.Error(w, "Authorization header required", http.StatusUnauthorized)
+			http.Error(w, "Authorization header is mandatory", http.StatusUnauthorized)
 			return
 		}
 
@@ -26,7 +26,6 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			func(token *jwt.Token) (interface{}, error) {
 				return []byte(jwtSecret), nil
 			})
-		utils.InfoLog("middleware jwt secret", []byte(jwtSecret))
 
 		if err != nil {
 			utils.ErrorLog("Token invalid", err)

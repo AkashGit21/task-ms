@@ -1,6 +1,7 @@
 package task
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/AkashGit21/task-ms/lib/persistence"
+	"github.com/AkashGit21/task-ms/utils"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
@@ -71,8 +73,8 @@ func (tvh *TaskHandler) createTask(w http.ResponseWriter, r *http.Request) {
 		stylizedContent = *req.HTMLStylizedContent
 	}
 
-	taskID := uuid.New().String()
-	currentTime := time.Now().UTC()
+	taskID, currentTime := uuid.New().String(), time.Now().UTC()
+	userClaims := utils.GetUserClaims(r.Context())
 	taskObject := persistence.Task{
 		ID:                  taskID,
 		Title:               title,
@@ -83,10 +85,10 @@ func (tvh *TaskHandler) createTask(w http.ResponseWriter, r *http.Request) {
 		Discarded:  false,
 		CreatedAt:  currentTime,
 		ModifiedAt: currentTime,
-		// TODO: Add user id after basic authn is implemented
-		CreatedBy:  "SYSTEM",
-		ModifiedBy: "SYSTEM",
+		CreatedBy:  userClaims.UserID,
+		ModifiedBy: userClaims.UserID,
 	}
+
 	rowsAffected, err := tvh.TaskOps.SaveRecord(taskObject)
 	if rowsAffected <= 0 || err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -176,13 +178,14 @@ func (tvh *TaskHandler) patchTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatedRecord, err := patchMutableFields(taskRecord, req)
+	updatedRecord, err := patchMutableFields(taskRecord, req, r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	updatedTasks, err := tvh.TaskOps.UpdateRecord(id, updatedRecord)
+	userClaims := utils.GetUserClaims(r.Context())
+	updatedTasks, err := tvh.TaskOps.UpdateRecord(id, userClaims.UserID, updatedRecord)
 	if updatedTasks < 1 || err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -219,7 +222,8 @@ func (tvh *TaskHandler) deleteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := tvh.TaskOps.DeactivateRecord(id)
+	userClaims := utils.GetUserClaims(r.Context())
+	err := tvh.TaskOps.DeactivateRecord(id, userClaims.UserID)
 	if err != nil {
 		if strings.EqualFold(err.Error(), "no rows affected") {
 			http.Error(w, "Task not found", http.StatusNotFound)
@@ -301,7 +305,15 @@ func (tvh *TaskHandler) listTasks(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func patchMutableFields(task *persistence.Task, req patchTaskRequest) (persistence.Task, error) {
+func patchMutableFields(task *persistence.Task, req patchTaskRequest, ctx context.Context) (persistence.Task, error) {
+	if req.Content == nil && req.HTMLStylizedContent == nil && req.Status == nil && req.Title == nil {
+		return *task, errors.New("invalid request")
+	}
+
+	userClaims := utils.GetUserClaims(ctx)
+	task.ModifiedBy = userClaims.UserID
+	task.ModifiedAt = time.Now().UTC()
+
 	if req.Content != nil {
 		task.Content = *req.Content
 	}
